@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>跳动的爱心</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="heartCanvas"></canvas>
+
+  <script>
+    // 配置参数
+    const xScreen = 1200;
+    const yScreen = 800;
+    const PI = Math.PI;
+    const E = Math.E;
+    const averageDistance = 0.162;
+    const quantity = 506;
+    const circles = 210;
+    const frames = 20;
+
+    // 颜色数组（粉色系）
+    const colors = [
+      'rgb(255,138,180)',
+      'rgb(252,145,196)',
+      'rgb(255,144,194)',
+      'rgb(255,144,194)',
+      'rgb(255,143,195)',
+      'rgb(255,140,190)',
+      'rgb(255,142,193)'
+    ];
+
+    // 获取随机颜色
+    function getRandomColor() {
+      return colors[Math.floor(Math.random() * colors.length)];
+    }
+
+    // 模拟 RGB 分解与变暗
+    function darkenColor(colorStr, factor) {
+      const r = parseInt(colorStr.slice(4, colorStr.indexOf(',')));
+      const g = parseInt(colorStr.slice(colorStr.indexOf(',') + 1, colorStr.lastIndexOf(',')));
+      const b = parseInt(colorStr.slice(colorStr.lastIndexOf(',') + 1, -1));
+      return `rgb(${Math.floor(r / factor)},${Math.floor(g / factor)},${Math.floor(b / factor)})`;
+    }
+
+    // 屏幕坐标转换
+    function screenX(x) {
+      return x + xScreen / 2;
+    }
+    function screenY(y) {
+      return -y + yScreen / 2;
+    }
+
+    // 生成随机整数 [min, max]
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // 心形参数方程采样点
+    const originPoints = [];
+    let t = 0.1;
+    let index = 0;
+    let x1 = 0, y1 = 0;
+
+    while (t <= 2 * PI) {
+      const x2 = 16 * Math.pow(Math.sin(t), 3);
+      const y2 = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+
+      const dx = x2 - x1, dy = y2 - y1;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist >= averageDistance) {
+        x1 = x2; y1 = y2;
+        originPoints[index++] = { x: x2, y: y2 };
+        if (index >= quantity) break;
+      }
+      t += 0.005;
+    }
+
+    // 扩展点集（多层缩放）
+    const points = [];
+    let pointIndex = 0;
+    for (let size = 0.1, lightness = 1.5; size <= 20; size += 0.1) {
+      const successP = 1 / (1 + Math.pow(E, 8 - size / 2));
+      if (lightness > 1) lightness -= 0.0025;
+
+      for (let i = 0; i < originPoints.length; i++) {
+        if (Math.random() < successP) {
+          const color = getRandomColor();
+          points[pointIndex] = {
+            x: size * originPoints[i].x + randomInt(-4, 4),
+            y: size * originPoints[i].y + randomInt(-4, 4),
+            color: darkenColor(color, lightness)
+          };
+          pointIndex++;
+        }
+      }
+    }
+
+    const totalPoints = pointIndex;
+
+    // 预渲染帧
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.canvas.width = xScreen;
+    ctx.canvas.height = yScreen;
+    const frameImages = new Array(frames);
+
+    for (let frame = 0; frame < frames; frame++) {
+      const offscreen = document.createElement('canvas');
+      offscreen.width = xScreen;
+      offscreen.height = yScreen;
+      const c = offscreen.getContext('2d');
+      c.fillStyle = '#000';
+      c.fillRect(0, 0, xScreen, yScreen);
+
+      // 动画扩散逻辑
+      let tempPoints = JSON.parse(JSON.stringify(points)); // 深拷贝
+      for (let i = 0; i < totalPoints; i++) {
+        const x = tempPoints[i].x;
+        const y = tempPoints[i].y;
+        const dist = Math.sqrt(x * x + y * y);
+        const increase = (-0.0009 * dist * dist + 0.35714 * dist + 5) / frames;
+        const dx = (x / dist) * increase * frame;
+        const dy = (y / dist) * increase * frame;
+
+        const nx = x + dx;
+        const ny = y + dy;
+
+        c.fillStyle = tempPoints[i].color;
+        c.fillRect(screenX(nx), screenY(ny), 2, 2);
+      }
+
+      // 外层闪烁点
+      for (let size = 17; size <= 23; size += 0.3) {
+        for (let i = 0; i < originPoints.length; i++) {
+          const prob = size >= 20 ? 0.6 : 0.95;
+          if (Math.random() > prob) {
+            let offsetX, offsetY;
+            if (size >= 20) {
+              const jitter = frame * frame / 5 + 15;
+              offsetX = randomInt(-jitter - 15, jitter + 15);
+              offsetY = randomInt(-jitter - 15, jitter + 15);
+            } else {
+              offsetX = randomInt(-5, 5);
+              offsetY = randomInt(-5, 5);
+            }
+            const x = originPoints[i].x * size + offsetX;
+            const y = originPoints[i].y * size + offsetY;
+            c.fillStyle = getRandomColor();
+            c.fillRect(screenX(x), screenY(y), 2, 2);
+          }
+        }
+      }
+
+      frameImages[frame] = offscreen;
+    }
+
+    // 动画播放
+    const canvas = document.getElementById('heartCanvas');
+    const c = canvas.getContext('2d');
+    canvas.width = xScreen;
+    canvas.height = yScreen;
+
+    let currentFrame = 0;
+    let direction = 1; // 1: expand, -1: shrink
+
+    function animate() {
+      c.clearRect(0, 0, xScreen, yScreen);
+      c.drawImage(frameImages[currentFrame], 0, 0);
+
+      // 帧控制
+      if (direction === 1) {
+        currentFrame = currentFrame < frames - 1 ? currentFrame + 1 : (direction = -1, currentFrame - 1);
+      } else {
+        currentFrame = currentFrame > 0 ? currentFrame - 1 : (direction = 1, currentFrame + 1);
+      }
+
+      requestAnimationFrame(animate);
+    }
+
+    // 开始动画
+    animate();
+  </script>
+</body>
+</html>
