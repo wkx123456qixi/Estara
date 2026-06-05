@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英语四六级考试复习工具</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 30px;
+    }
+
+    header h1 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+
+    .stats-bar {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .stat-item {
+      background: rgba(255,255,255,0.2);
+      padding: 15px 25px;
+      border-radius: 10px;
+      text-align: center;
+      color: white;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-item .number {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .stat-item .label {
+      font-size: 0.9rem;
+      opacity: 0.9;
+    }
+
+    .nav-tabs {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .nav-tab {
+      padding: 12px 30px;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-tab:hover {
+      background: rgba(255,255,255,0.3);
+      transform: translateY(-2px);
+    }
+
+    .nav-tab.active {
+      background: white;
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .card {
+      background: white;
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+      margin-bottom: 20px;
+    }
+
+    .word-display {
+      text-align: center;
+    }
+
+    .word-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .level-badge {
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: bold;
+    }
+
+    .level-badge.cet4 {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .level-badge.cet6 {
+      background: #FF9800;
+      color: white;
+    }
+
+    .level-badge.phrase {
+      background: #9C27B0;
+      color: white;
+    }
+
+    .word {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .pronunciation {
+      font-size: 1.2rem;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .meaning {
+      font-size: 1.5rem;
+      color: #667eea;
+      margin-bottom: 25px;
+      font-weight: 500;
+    }
+
+    .example-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 25px;
+      text-align: left;
+    }
+
+    .example {
+      font-size: 1.2rem;
+      color: #333;
+      margin-bottom: 10px;
+      font-style: italic;
+    }
+
+    .example-translation {
+      font-size: 1rem;
+      color: #666;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 15px 40px;
+      border: none;
+      border-radius: 30px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-weight: bold;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-success {
+      background: #4CAF50;
+      color: white;
+    }
+
+    .btn-success:hover {
+      background: #45a049;
+      transform: translateY(-3px);
+    }
+
+    .btn-danger {
+      background: #f44336;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #da190b;
+      transform: translateY(-3px);
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #5a6268;
+      transform: translateY(-3px);
+    }
+
+    .word-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+    }
+
+    .word-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 2px solid transparent;
+    }
+
+    .word-item:hover {
+      border-color: #667eea;
+      transform: translateY(-2px);
+    }
+
+    .word-item .word-title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .word-item .word-meaning {
+      font-size: 0.95rem;
+      color: #666;
+    }
+
+    .word-item.learned {
+      background: #e8f5e9;
+      border-color: #4CAF50;
+    }
+
+    .word-item.mastered {
+      background: #fff3e0;
+      border-color: #FF9800;
+    }
+
+    .progress-ring {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+
+    .progress-item {
+      text-align: center;
+    }
+
+    .progress-circle {
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: conic-gradient(#667eea ${props => props.progress || 0}%, #e0e0e0 0%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .progress-circle::before {
+      content: '';
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: white;
+      position: absolute;
+    }
+
+    .progress-value {
+      position: relative;
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #667eea;
+    }
+
+    .search-box {
+      margin-bottom: 20px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 15px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 30px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .search-input:focus {
+      border-color: #667eea;
+    }
+
+    .filter-btns {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 8px 20px;
+      border: 2px solid #e0e0e0;
+      background: white;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .filter-btn:hover {
+      border-color: #667eea;
+    }
+
+    .filter-btn.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .quiz-section {
+      text-align: center;
+    }
+
+    .quiz-question {
+      font-size: 2rem;
+      color: #333;
+      margin-bottom: 30px;
+    }
+
+    .quiz-options {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .quiz-option {
+      padding: 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 1.1rem;
+      background: white;
+    }
+
+    .quiz-option:hover {
+      border-color: #667eea;
+      background: #f8f9fa;
+    }
+
+    .quiz-option.correct {
+      background: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+
+    .quiz-option.wrong {
+      background: #f44336;
+      color: white;
+      border-color: #f44336;
+    }
+
+    .quiz-feedback {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+    }
+
+    .quiz-feedback.correct {
+      background: #e8f5e9;
+      color: #4CAF50;
+    }
+
+    .quiz-feedback.wrong {
+      background: #ffebee;
+      color: #f44336;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .footer {
+      text-align: center;
+      margin-top: 30px;
+      color: white;
+      opacity: 0.8;
+    }
+
+    @media (max-width: 768px) {
+      .word {
+        font-size: 2rem;
+      }
+
+      .meaning {
+        font-size: 1.2rem;
+      }
+
+      .stats-bar {
+        gap: 15px;
+      }
+
+      .stat-item {
+        padding: 10px 15px;
+      }
+
+      .quiz-options {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📚 英语四六级考试复习工具</h1>
+      <p>高效学习，间隔重复记忆法</p>
+    </header>
+
+    <div class="stats-bar">
+      <div class="stat-item">
+        <div class="number" id="totalWords">0</div>
+        <div class="label">总词汇量</div>
+      </div>
+      <div class="stat-item">
+        <div class="number" id="learnedWords">0</div>
+        <div class="label">已学习</div>
+      </div>
+      <div class="stat-item">
+        <div class="number" id="masteredWords">0</div>
+        <div class="label">已掌握</div>
+      </div>
+      <div class="stat-item">
+        <div class="number" id="toReview">0</div>
+        <div class="label">待复习</div>
+      </div>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="learn">单词学习</button>
+      <button class="nav-tab" data-tab="review">复习巩固</button>
+      <button class="nav-tab" data-tab="phrase">短语汇总</button>
+      <button class="nav-tab" data-tab="quiz">测验模式</button>
+      <button class="nav-tab" data-tab="list">词汇列表</button>
+    </div>
+
+    <div id="learnSection" class="card">
+      <div class="word-display" id="wordDisplay">
+        <div class="word-header">
+          <span class="level-badge cet4" id="levelBadge">CET-4</span>
+        </div>
+        <div class="word" id="currentWord">abandon</div>
+        <div class="pronunciation" id="currentPronunciation">[ə'bændən]</div>
+        <div class="meaning" id="currentMeaning">放弃，抛弃</div>
+        <div class="example-section">
+          <div class="example" id="currentExample">Never abandon your dreams.</div>
+          <div class="example-translation" id="currentExampleTranslation">永远不要放弃你的梦想。</div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button class="btn btn-danger" onclick="markWord(false)">❌ 不认识</button>
+        <button class="btn btn-success" onclick="nextWord()">下一个 →</button>
+        <button class="btn btn-primary" onclick="markWord(true)">✓ 认识</button>
+      </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="switchLevel()">切换 CET-4 / CET-6</button>
+      </div>
+    </div>
+
+    <div id="reviewSection" class="card hidden">
+      <div class="word-display">
+        <div class="word-header">
+          <span class="level-badge" id="reviewLevelBadge">CET-4</span>
+          <span id="reviewProgress">0/0</span>
+        </div>
+        <div class="word" id="reviewWord">-</div>
+        <div class="pronunciation" id="reviewPronunciation">-</div>
+        <div class="meaning" id="reviewMeaning">-</div>
+        <div class="example-section">
+          <div class="example" id="reviewExample">-</div>
+          <div class="example-translation" id="reviewExampleTranslation">-</div>
+        </div>
+      </div>
+      <div class="buttons">
+        <button class="btn btn-danger" onclick="reviewWord(false)">❌ 不记得</button>
+        <button class="btn btn-primary" onclick="reviewWord(true)">✓ 记得</button>
+      </div>
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn btn-secondary" onclick="loadReview()">刷新复习队列</button>
+      </div>
+    </div>
+
+    <div id="phraseSection" class="card hidden">
+      <h2 style="text-align: center; margin-bottom: 20px; color: #333;">重点短语汇总</h2>
+      <div class="search-box">
+        <input type="text" class="search-input" placeholder="搜索短语..." id="phraseSearch" oninput="filterPhrases()">
+      </div>
+      <div class="word-list" id="phraseList"></div>
+    </div>
+
+    <div id="quizSection" class="card hidden">
+      <div class="quiz-section">
+        <h3 id="quizProgress">题目 1/5</h3>
+        <div class="quiz-question" id="quizQuestion">What is the meaning of "abandon"?</div>
+        <div class="quiz-options" id="quizOptions"></div>
+        <div class="quiz-feedback hidden" id="quizFeedback"></div>
+        <div style="margin-top: 20px;">
+          <button class="btn btn-secondary hidden" id="nextQuizBtn" onclick="nextQuiz()">下一题</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="listSection" class="card hidden">
+      <h2 style="text-align: center; margin-bottom: 20px; color: #333;">词汇列表</h2>
+      <div class="filter-btns">
+        <button class="filter-btn active" data-filter="all" onclick="filterWords('all')">全部</button>
+        <button class="filter-btn" data-filter="cet4" onclick="filterWords('cet4')">CET-4</button>
+        <button class="filter-btn" data-filter="cet6" onclick="filterWords('cet6')">CET-6</button>
+        <button class="filter-btn" data-filter="learned" onclick="filterWords('learned')">已学习</button>
+        <button class="filter-btn" data-filter="mastered" onclick="filterWords('mastered')">已掌握</button>
+      </div>
+      <div class="search-box">
+        <input type="text" class="search-input" placeholder="搜索单词..." id="wordSearch" oninput="filterWords(currentFilter)">
+      </div>
+      <div class="word-list" id="wordList"></div>
+    </div>
+
+    <div class="footer">
+      <p>使用间隔重复记忆算法 (Spaced Repetition) | 数据来源：历年真题高频词汇</p>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = '';
+    let currentLevel = 'cet4';
+    let currentWordIndex = 0;
+    let words = [];
+    let phrases = [];
+    let userId = 'user_' + Date.now();
+    let reviewWords = [];
+    let currentReviewIndex = 0;
+    let quizWords = [];
+    let currentQuizIndex = 0;
+    let currentQuizAnswer = null;
+    let currentFilter = 'all';
+
+    // 初始化
+    async function init() {
+      await loadAllData();
+      await loadProgress();
+      loadWord();
+      loadPhrases();
+      loadReview();
+      setupTabs();
+      updateStats();
+    }
+
+    async function loadAllData() {
+      try {
+        const res = await fetch(`${API_BASE}/api/all`);
+        const data = await res.json();
+        words = [...data.cet4, ...data.cet6];
+        phrases = data.phrases;
+      } catch (e) {
+        console.error('Failed to load data:', e);
+      }
+    }
+
+    async function loadProgress() {
+      try {
+        const res = await fetch(`${API_BASE}/api/progress/${userId}`);
+        const data = await res.json();
+        window.userProgress = data;
+      } catch (e) {
+        console.error('Failed to load progress:', e);
+      }
+    }
+
+    async function saveProgress(wordId, correct) {
+      try {
+        await fetch(`${API_BASE}/api/progress/${userId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wordId, level: currentLevel, correct })
+        });
+        await loadProgress();
+        updateStats();
+      } catch (e) {
+        console.error('Failed to save progress:', e);
+      }
+    }
+
+    async function updateStats() {
+      try {
+        const res = await fetch(`${API_BASE}/api/stats/${userId}`);
+        const stats = await res.json();
+        document.getElementById('totalWords').textContent = stats.total;
+        document.getElementById('learnedWords').textContent = stats.learned;
+        document.getElementById('masteredWords').textContent = stats.mastered;
+        document.getElementById('toReview').textContent = stats.toReview;
+      } catch (e) {
+        console.error('Failed to load stats:', e);
+      }
+    }
+
+    function loadWord() {
+      const levelWords = words.filter(w => {
+        if (currentLevel === 'cet4') return w.id < 100;
+        return w.id >= 100;
+      });
+
+      if (levelWords.length === 0) return;
+
+      currentWordIndex = Math.floor(Math.random() * levelWords.length);
+      const word = levelWords[currentWordIndex];
+
+      document.getElementById('currentWord').textContent = word.word;
+      document.getElementById('currentPronunciation').textContent = word.pronunciation;
+      document.getElementById('currentMeaning').textContent = word.meaning;
+      document.getElementById('currentExample').textContent = word.example;
+      document.getElementById('currentExampleTranslation').textContent = word.exampleTranslation;
+
+      const badge = document.getElementById('levelBadge');
+      badge.textContent = currentLevel === 'cet4' ? 'CET-4' : 'CET-6';
+      badge.className = 'level-badge ' + (currentLevel === 'cet4' ? 'cet4' : 'cet6');
+    }
+
+    function nextWord() {
+      loadWord();
+    }
+
+    function switchLevel() {
+      currentLevel = currentLevel === 'cet4' ? 'cet6' : 'cet4';
+      loadWord();
+    }
+
+    async function markWord(correct) {
+      const levelWords = words.filter(w => {
+        if (currentLevel === 'cet4') return w.id < 100;
+        return w.id >= 100;
+      });
+      const word = levelWords[currentWordIndex];
+      await saveProgress(word.id, correct);
+      loadWord();
+    }
+
+    async function loadReview() {
+      try {
+        const res = await fetch(`${API_BASE}/api/review/${userId}`);
+        const data = await res.json();
+        reviewWords = data.words || [];
+        currentReviewIndex = 0;
+
+        if (reviewWords.length > 0) {
+          showReviewWord();
+        } else {
+          document.getElementById('reviewWord').textContent = '🎉 暂时没有需要复习的单词！';
+          document.getElementById('reviewPronunciation').textContent = '每天坚持学习，系统会自动安排复习';
+          document.getElementById('reviewMeaning').textContent = '';
+          document.getElementById('reviewExample').textContent = '';
+          document.getElementById('reviewExampleTranslation').textContent = '';
+        }
+        await updateStats();
+      } catch (e) {
+        console.error('Failed to load review:', e);
+      }
+    }
+
+    function showReviewWord() {
+      if (currentReviewIndex >= reviewWords.length) {
+        document.getElementById('reviewWord').textContent = '🎉 今日复习完成！';
+        document.getElementById('reviewPronunciation').textContent = '';
+        document.getElementById('reviewMeaning').textContent = '';
+        document.getElementById('reviewExample').textContent = '太棒了！';
+        document.getElementById('reviewExampleTranslation').textContent = '记得明天再来复习哦';
+        return;
+      }
+
+      const word = reviewWords[currentReviewIndex];
+      document.getElementById('reviewWord').textContent = word.word;
+      document.getElementById('reviewPronunciation').textContent = word.pronunciation;
+      document.getElementById('reviewMeaning').textContent = word.meaning;
+      document.getElementById('reviewExample').textContent = word.example;
+      document.getElementById('reviewExampleTranslation').textContent = word.exampleTranslation;
+      document.getElementById('reviewProgress').textContent = `${currentReviewIndex + 1}/${reviewWords.length}`;
+
+      const badge = document.getElementById('reviewLevelBadge');
+      badge.textContent = word.level === 'cet4' ? 'CET-4' : 'CET-6';
+      badge.className = 'level-badge ' + (word.level === 'cet4' ? 'cet4' : 'cet6');
+    }
+
+    async function reviewWord(correct) {
+      if (currentReviewIndex < reviewWords.length) {
+        const word = reviewWords[currentReviewIndex];
+        await saveProgress(word.id, correct);
+        currentReviewIndex++;
+        showReviewWord();
+      }
+    }
+
+    function loadPhrases() {
+      const phraseList = document.getElementById('phraseList');
+      phraseList.innerHTML = phrases.map(p => `
+        <div class="word-item">
+          <div class="word-title">${p.phrase}</div>
+          <div class="word-meaning">${p.meaning}</div>
+          <div style="margin-top: 10px; font-size: 0.85rem; color: #666;">${p.example}</div>
+          <div style="font-size: 0.85rem; color: #888;">${p.exampleTranslation}</div>
+        </div>
+      `).join('');
+    }
+
+    function filterPhrases() {
+      const query = document.getElementById('phraseSearch').value.toLowerCase();
+      const phraseList = document.getElementById('phraseList');
+      const items = phraseList.getElementsByClassName('word-item');
+
+      Array.from(items).forEach((item, index) => {
+        const phrase = phrases[index];
+        const match = phrase.phrase.toLowerCase().includes(query) ||
+                      phrase.meaning.toLowerCase().includes(query);
+        item.style.display = match ? '' : 'none';
+      });
+    }
+
+    function filterWords(filter) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+
+      const query = document.getElementById('wordSearch').value.toLowerCase();
+      const wordList = document.getElementById('wordList');
+
+      let filteredWords = words;
+      if (filter === 'cet4') filteredWords = words.filter(w => w.id < 100);
+      else if (filter === 'cet6') filteredWords = words.filter(w => w.id >= 100);
+      else if (filter === 'learned') {
+        filteredWords = words.filter(w => {
+          const key = `${w.id < 100 ? 'cet4' : 'cet6'}_${w.id}`;
+          return window.userProgress?.learned?.includes(key);
+        });
+      }
+      else if (filter === 'mastered') {
+        filteredWords = words.filter(w => {
+          const key = `${w.id < 100 ? 'cet4' : 'cet6'}_${w.id}`;
+          return window.userProgress?.mastered?.includes(key);
+        });
+      }
+
+      if (query) {
+        filteredWords = filteredWords.filter(w =>
+          w.word.toLowerCase().includes(query) ||
+          w.meaning.toLowerCase().includes(query)
+        );
+      }
+
+      wordList.innerHTML = filteredWords.map(w => {
+        const level = w.id < 100 ? 'cet4' : 'cet6';
+        const key = `${level}_${w.id}`;
+        const learned = window.userProgress?.learned?.includes(key);
+        const mastered = window.userProgress?.mastered?.includes(key);
+        let className = 'word-item';
+        if (mastered) className += ' mastered';
+        else if (learned) className += ' learned';
+
+        return `
+          <div class="${className}" onclick="showWordDetail(${w.id}, '${level}')">
+            <div class="word-title">${w.word}</div>
+            <div class="word-meaning">${w.meaning}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showWordDetail(wordId, level) {
+      const word = words.find(w => w.id === wordId);
+      if (!word) return;
+
+      currentLevel = level;
+      document.getElementById('currentWord').textContent = word.word;
+      document.getElementById('currentPronunciation').textContent = word.pronunciation;
+      document.getElementById('currentMeaning').textContent = word.meaning;
+      document.getElementById('currentExample').textContent = word.example;
+      document.getElementById('currentExampleTranslation').textContent = word.exampleTranslation;
+
+      const badge = document.getElementById('levelBadge');
+      badge.textContent = level === 'cet4' ? 'CET-4' : 'CET-6';
+      badge.className = 'level-badge ' + (level === 'cet4' ? 'cet4' : 'cet6');
+
+      switchTab('learn');
+    }
+
+    function setupTabs() {
+      const tabs = document.querySelectorAll('.nav-tab');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          switchTab(tab.dataset.tab);
+        });
+      });
+    }
+
+    function switchTab(tabName) {
+      document.querySelectorAll('.nav-tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+      });
+
+      document.getElementById('learnSection').classList.toggle('hidden', tabName !== 'learn');
+      document.getElementById('reviewSection').classList.toggle('hidden', tabName !== 'review');
+      document.getElementById('phraseSection').classList.toggle('hidden', tabName !== 'phrase');
+      document.getElementById('quizSection').classList.toggle('hidden', tabName !== 'quiz');
+      document.getElementById('listSection').classList.toggle('hidden', tabName !== 'list');
+
+      if (tabName === 'quiz') startQuiz();
+      if (tabName === 'list') filterWords('all');
+    }
+
+    function startQuiz() {
+      quizWords = [...words].sort(() => Math.random() - 0.5).slice(0, 10);
+      currentQuizIndex = 0;
+      showQuizQuestion();
+    }
+
+    function showQuizQuestion() {
+      if (currentQuizIndex >= quizWords.length) {
+        document.getElementById('quizQuestion').textContent = '🎉 测验完成！';
+        document.getElementById('quizOptions').innerHTML = '';
+        document.getElementById('quizFeedback').classList.add('hidden');
+        document.getElementById('nextQuizBtn').classList.add('hidden');
+        return;
+      }
+
+      const word = quizWords[currentQuizIndex];
+      document.getElementById('quizProgress').textContent = `题目 ${currentQuizIndex + 1}/${quizWords.length}`;
+      document.getElementById('quizQuestion').textContent = `What is the meaning of "${word.word}"?`;
+      document.getElementById('quizFeedback').classList.add('hidden');
+      document.getElementById('nextQuizBtn').classList.add('hidden');
+
+      const options = generateOptions(word);
+      document.getElementById('quizOptions').innerHTML = options.map((opt, i) =>
+        `<div class="quiz-option" onclick="selectQuizOption(${i}, ${opt.isCorrect})">${opt.text}</div>`
+      ).join('');
+    }
+
+    function generateOptions(correctWord) {
+      const options = [{ text: correctWord.meaning, isCorrect: true }];
+      const otherWords = words.filter(w => w.id !== correctWord.id);
+
+      while (options.length < 4) {
+        const randomWord = otherWords[Math.floor(Math.random() * otherWords.length)];
+        if (!options.find(o => o.text === randomWord.meaning)) {
+          options.push({ text: randomWord.meaning, isCorrect: false });
+        }
+      }
+
+      return options.sort(() => Math.random() - 0.5);
+    }
+
+    function selectQuizOption(index, isCorrect) {
+      const options = document.querySelectorAll('.quiz-option');
+      options.forEach(opt => opt.style.pointerEvents = 'none');
+
+      options[index].classList.add(isCorrect ? 'correct' : 'wrong');
+
+      if (!isCorrect) {
+        options.forEach(opt => {
+          if (opt.textContent === quizWords[currentQuizIndex].meaning) {
+            opt.classList.add('correct');
+          }
+        });
+      }
+
+      const feedback = document.getElementById('quizFeedback');
+      feedback.classList.remove('hidden', 'correct', 'wrong');
+      feedback.classList.add(isCorrect ? 'correct' : 'wrong');
+      feedback.textContent = isCorrect ? '✓ 回答正确！' : '✗ 回答错误';
+
+      document.getElementById('nextQuizBtn').classList.remove('hidden');
+    }
+
+    function nextQuiz() {
+      currentQuizIndex++;
+      showQuizQuestion();
+    }
+
+    init();
+  </script>
+</body>
+</html>
