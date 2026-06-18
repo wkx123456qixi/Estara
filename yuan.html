@@ -8,7 +8,7 @@
     body {
       margin: 0;
       overflow: hidden;
-      background: #000;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -16,14 +16,13 @@
     }
     canvas {
       display: block;
+      filter: drop-shadow(0 0 30px rgba(255, 138, 180, 0.3));
     }
   </style>
 </head>
 <body>
   <canvas id="heartCanvas"></canvas>
-
   <script>
-    // 配置参数
     const xScreen = 1200;
     const yScreen = 800;
     const PI = Math.PI;
@@ -33,7 +32,6 @@
     const circles = 210;
     const frames = 20;
 
-    // 颜色数组（粉色系）
     const colors = [
       'rgb(255,138,180)',
       'rgb(252,145,196)',
@@ -44,20 +42,35 @@
       'rgb(255,142,193)'
     ];
 
-    // 获取随机颜色
     function getRandomColor() {
       return colors[Math.floor(Math.random() * colors.length)];
     }
 
-    // 模拟 RGB 分解与变暗
-    function darkenColor(colorStr, factor) {
+    function parseColor(colorStr) {
       const r = parseInt(colorStr.slice(4, colorStr.indexOf(',')));
       const g = parseInt(colorStr.slice(colorStr.indexOf(',') + 1, colorStr.lastIndexOf(',')));
       const b = parseInt(colorStr.slice(colorStr.lastIndexOf(',') + 1, -1));
-      return `rgb(${Math.floor(r / factor)},${Math.floor(g / factor)},${Math.floor(b / factor)})`;
+      return { r, g, b };
     }
 
-    // 屏幕坐标转换
+    function rgbToString(r, g, b) {
+      return `rgb(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)})`;
+    }
+
+    function rgbaToString(r, g, b, a) {
+      return `rgba(${Math.floor(r)},${Math.floor(g)},${Math.floor(b)},${a})`;
+    }
+
+    function darkenColor(colorStr, factor) {
+      const { r, g, b } = parseColor(colorStr);
+      return rgbToString(r / factor, g / factor, b / factor);
+    }
+
+    function lightenColor(colorStr, factor) {
+      const { r, g, b } = parseColor(colorStr);
+      return rgbToString(Math.min(255, r * factor), Math.min(255, g * factor), Math.min(255, b * factor));
+    }
+
     function screenX(x) {
       return x + xScreen / 2;
     }
@@ -65,12 +78,10 @@
       return -y + yScreen / 2;
     }
 
-    // 生成随机整数 [min, max]
     function randomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    // 心形参数方程采样点
     const originPoints = [];
     let t = 0.1;
     let index = 0;
@@ -91,7 +102,6 @@
       t += 0.005;
     }
 
-    // 扩展点集（多层缩放）
     const points = [];
     let pointIndex = 0;
     for (let size = 0.1, lightness = 1.5; size <= 20; size += 0.1) {
@@ -101,10 +111,13 @@
       for (let i = 0; i < originPoints.length; i++) {
         if (Math.random() < successP) {
           const color = getRandomColor();
+          const depth = size / 20;
           points[pointIndex] = {
             x: size * originPoints[i].x + randomInt(-4, 4),
             y: size * originPoints[i].y + randomInt(-4, 4),
-            color: darkenColor(color, lightness)
+            color: darkenColor(color, lightness),
+            depth: depth,
+            size: size
           };
           pointIndex++;
         }
@@ -113,7 +126,6 @@
 
     const totalPoints = pointIndex;
 
-    // 预渲染帧
     const ctx = document.createElement('canvas').getContext('2d');
     ctx.canvas.width = xScreen;
     ctx.canvas.height = yScreen;
@@ -124,11 +136,16 @@
       offscreen.width = xScreen;
       offscreen.height = yScreen;
       const c = offscreen.getContext('2d');
-      c.fillStyle = '#000';
+      c.fillStyle = 'rgba(10, 10, 30, 1)';
       c.fillRect(0, 0, xScreen, yScreen);
 
-      // 动画扩散逻辑
-      let tempPoints = JSON.parse(JSON.stringify(points)); // 深拷贝
+      c.save();
+      c.shadowColor = 'rgba(255, 138, 180, 0.8)';
+      c.shadowBlur = 20;
+      c.shadowOffsetX = 10;
+      c.shadowOffsetY = 10;
+
+      let tempPoints = JSON.parse(JSON.stringify(points));
       for (let i = 0; i < totalPoints; i++) {
         const x = tempPoints[i].x;
         const y = tempPoints[i].y;
@@ -139,12 +156,53 @@
 
         const nx = x + dx;
         const ny = y + dy;
+        const depth = tempPoints[i].depth;
 
-        c.fillStyle = tempPoints[i].color;
-        c.fillRect(screenX(nx), screenY(ny), 2, 2);
+        const baseColor = parseColor(tempPoints[i].color);
+        const shadowFactor = 0.6 + depth * 0.4;
+        const shadowColor = rgbToString(baseColor.r * shadowFactor, baseColor.g * shadowFactor, baseColor.b * shadowFactor);
+
+        c.fillStyle = shadowColor;
+        c.globalAlpha = 0.3;
+        c.beginPath();
+        c.arc(screenX(nx) + 3 * depth, screenY(ny) + 3 * depth, 2 + depth, 0, PI * 2);
+        c.fill();
+
+        const gradient = c.createRadialGradient(
+          screenX(nx) - depth, screenY(ny) - depth, 0,
+          screenX(nx), screenY(ny), 3 + depth
+        );
+        const highlightColor = rgbaToString(255, 200, 220, 0.8);
+        const midColor = rgbaToString(baseColor.r, baseColor.g, baseColor.b, 0.9);
+        const edgeColor = rgbaToString(baseColor.r * 0.7, baseColor.g * 0.5, baseColor.b * 0.6, 0.6);
+
+        gradient.addColorStop(0, highlightColor);
+        gradient.addColorStop(0.4, midColor);
+        gradient.addColorStop(1, edgeColor);
+
+        c.fillStyle = gradient;
+        c.globalAlpha = 0.8 + depth * 0.2;
+        c.beginPath();
+        c.arc(screenX(nx), screenY(ny), 2 + depth, 0, PI * 2);
+        c.fill();
+
+        c.globalAlpha = 0.3;
+        const glowGradient = c.createRadialGradient(
+          screenX(nx), screenY(ny), 0,
+          screenX(nx), screenY(ny), 8 + depth * 4
+        );
+        glowGradient.addColorStop(0, rgbaToString(255, 138, 180, 0.4));
+        glowGradient.addColorStop(0.5, rgbaToString(255, 100, 150, 0.1));
+        glowGradient.addColorStop(1, 'rgba(255, 100, 150, 0)');
+        c.fillStyle = glowGradient;
+        c.beginPath();
+        c.arc(screenX(nx), screenY(ny), 8 + depth * 4, 0, PI * 2);
+        c.fill();
       }
 
-      // 外层闪烁点
+      c.globalAlpha = 1;
+      c.shadowBlur = 0;
+
       for (let size = 17; size <= 23; size += 0.3) {
         for (let i = 0; i < originPoints.length; i++) {
           const prob = size >= 20 ? 0.6 : 0.95;
@@ -160,29 +218,53 @@
             }
             const x = originPoints[i].x * size + offsetX;
             const y = originPoints[i].y * size + offsetY;
-            c.fillStyle = getRandomColor();
-            c.fillRect(screenX(x), screenY(y), 2, 2);
+
+            const color = getRandomColor();
+            const gradient = c.createRadialGradient(
+              screenX(x) - 1, screenY(y) - 1, 0,
+              screenX(x), screenY(y), 3
+            );
+            gradient.addColorStop(0, 'rgba(255, 220, 240, 0.9)');
+            gradient.addColorStop(0.5, color);
+            gradient.addColorStop(1, 'rgba(200, 80, 130, 0.5)');
+
+            c.fillStyle = gradient;
+            c.beginPath();
+            c.arc(screenX(x), screenY(y), 3, 0, PI * 2);
+            c.fill();
+
+            c.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            c.beginPath();
+            c.arc(screenX(x) - 0.5, screenY(y) - 0.5, 1, 0, PI * 2);
+            c.fill();
           }
         }
       }
 
+      c.restore();
+
       frameImages[frame] = offscreen;
     }
 
-    // 动画播放
     const canvas = document.getElementById('heartCanvas');
     const c = canvas.getContext('2d');
     canvas.width = xScreen;
     canvas.height = yScreen;
 
     let currentFrame = 0;
-    let direction = 1; // 1: expand, -1: shrink
+    let direction = 1;
 
     function animate() {
       c.clearRect(0, 0, xScreen, yScreen);
+      
+      c.save();
+      c.filter = 'blur(2px)';
+      c.globalAlpha = 0.3;
+      c.drawImage(frameImages[currentFrame], 0, 0);
+      c.restore();
+      
       c.drawImage(frameImages[currentFrame], 0, 0);
 
-      // 帧控制
       if (direction === 1) {
         currentFrame = currentFrame < frames - 1 ? currentFrame + 1 : (direction = -1, currentFrame - 1);
       } else {
@@ -192,360 +274,7 @@
       requestAnimationFrame(animate);
     }
 
-    // 开始动画
     animate();
   </script>
 </body>
-</html><!DOCTYPE html>
-<html lang="zh<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height:<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(2<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(255, 200, 220, 0.08)<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(255, 200, 220, 0.08) 0%, transparent 40%);
-      pointer-events: none;
-    }
-<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(255, 200, 220, 0.08) 0%, transparent 40%);
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <canvas<!DOCTYPE html>
-<html lang="zh">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>跳动的爱心</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      background: linear-gradient(135deg, #1a0a1a 0%, #0a0510 50%, #1a0a1a 100%);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    canvas {
-      display: block;
-      filter: blur(0.5px);
-    }
-    .container {
-      position: relative;
-      filter: drop-shadow(0 0 30px rgba(255, 100, 150, 0.4));
-    }
-    .glass-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: radial-gradient(ellipse at 30% 20%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
-                  radial-gradient(ellipse at 70% 80%, rgba(255, 200, 220, 0.08) 0%, transparent 40%);
-      pointer-events: none;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <canvas id="heartCanvas"></canvas>
-    <div class="glass-overlay"></div>
+</html>
